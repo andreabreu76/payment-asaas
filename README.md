@@ -69,11 +69,86 @@ php artisan serve
 
 ## Estrutura do Projeto
 
+### Árvore de Diretórios
+
+```
+payment-asaas-api/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   └── PaymentController.php  # Controlador principal para processamento de pagamentos
+│   │   └── Resources/
+│   │       └── PaymentResource.php    # Recurso para padronização das respostas da API
+├── resources/
+│   └── views/
+│       ├── layouts/
+│       │   └── app.blade.php          # Template principal do layout da aplicação
+│       └── payments/
+│           ├── index.blade.php        # Página com formulário de pagamento
+│           └── thank-you.blade.php    # Página de agradecimento após o pagamento
+└── routes/
+    └── web.php                        # Definição das rotas da aplicação
+```
+
+### Descrição dos Arquivos Principais
+
 - `app/Http/Controllers/PaymentController.php`: Controlador responsável pelo processamento de pagamentos
+  - `index()`: Exibe o formulário de pagamento
+  - `process()`: Processa o pagamento com base no método selecionado
+  - `thankYou()`: Exibe a página de agradecimento com detalhes do pagamento
+  - `createCustomer()`: Cria um cliente na API Asaas
+  - `processBoleto()`: Processa pagamentos via boleto
+  - `processCreditCard()`: Processa pagamentos via cartão de crédito
+  - `processPix()`: Processa pagamentos via PIX
+
 - `app/Http/Resources/PaymentResource.php`: Recurso para padronização das respostas da API
+
+- `resources/views/layouts/app.blade.php`: Template principal do layout da aplicação
+
 - `resources/views/payments/index.blade.php`: Página do formulário de pagamento
+  - Formulário para coleta de dados pessoais
+  - Seleção do método de pagamento (Boleto, Cartão de Crédito, PIX)
+  - Campos específicos para cada método de pagamento
+
 - `resources/views/payments/thank-you.blade.php`: Página de confirmação do pagamento
+  - Exibe detalhes do pagamento
+  - Para boleto: exibe link para visualização/impressão
+  - Para PIX: exibe QR Code e código para cópia
+  - Para cartão: exibe informações da transação
+
 - `routes/web.php`: Rotas da aplicação
+  - `/payments`: Exibe o formulário de pagamento
+  - `/payments/process`: Processa o pagamento
+  - `/payments/thank-you`: Exibe a página de agradecimento
+
+### Fluxo do Sistema de Pagamento
+
+```mermaid
+flowchart TD
+    A[Usuário acessa o sistema] --> B[Exibição do formulário de pagamento]
+    B --> C[Usuário preenche dados e seleciona método de pagamento]
+    C --> D{Qual método de pagamento?}
+    D -->|Boleto| E1[Processamento de Boleto]
+    D -->|Cartão de Crédito| E2[Processamento de Cartão]
+    D -->|PIX| E3[Processamento de PIX]
+
+    E1 --> F1[API Asaas - Criação de Boleto]
+    E2 --> F2[API Asaas - Processamento de Cartão]
+    E3 --> F3[API Asaas - Geração de PIX]
+
+    F1 --> G[Redirecionamento para página de agradecimento]
+    F2 --> G
+    F3 --> G
+
+    G --> H{Qual foi o método?}
+    H -->|Boleto| I1[Exibição do link do boleto]
+    H -->|Cartão| I2[Exibição da confirmação do cartão]
+    H -->|PIX| I3[Exibição do QR Code e código PIX]
+
+    I1 --> J[Usuário finaliza o processo]
+    I2 --> J
+    I3 --> J
+```
 
 ## Documentação da API Asaas
 
