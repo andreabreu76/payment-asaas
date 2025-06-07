@@ -185,4 +185,17 @@ return [
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Asaas API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | These values are used for the Asaas API integration. The URL is the base
+    | URL for the API, and the key is the API key used for authentication.
+    |
+    */
+
+    'asaas_api_url' => env('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3'),
+    'asaas_api_key' => env('ASAAS_API_KEY'),
+
 ];

@@ -23,11 +23,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Payment Routes (protected by auth middleware)
 Route::middleware(['auth'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-    Route::post('/payments/process', [PaymentController::class, 'process'])->name('payments.process');
+    Route::post('/payments', [PaymentController::class, 'process'])->name('payments.process');
     Route::get('/payments/thank-you', [PaymentController::class, 'thankYou'])->name('payments.thank-you');
 });
 
-// Redirect root to payments page (will be redirected to login if not authenticated)
+// Public welcome page
 Route::get('/', function () {
-    return redirect()->route('payments.index');
+    return view('welcome');
 });
