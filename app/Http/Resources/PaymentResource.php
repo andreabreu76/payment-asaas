@@ -27,10 +27,12 @@ class PaymentResource extends JsonResource
             'bankSlipUrl' => $this->bankSlipUrl ?? null,
             'pixQrCodeUrl' => $this->pixQrCodeUrl ?? null,
             'pixCopiaECola' => $this->pixCopiaECola ?? null,
-            'creditCard' => $this->when($this->billingType === 'CREDIT_CARD', [
-                'creditCardBrand' => $this->creditCardBrand,
-                'creditCardNumber' => $this->creditCardNumber,
-            ]),
+            'creditCard' => $this->when($this->billingType === 'CREDIT_CARD', function () {
+                return [
+                    'creditCardBrand' => $this->creditCardBrand,
+                    'creditCardNumber' => $this->creditCardNumber,
+                ];
+            }),
             'created_at' => $this->dateCreated,
             'updated_at' => $this->lastUpdateDate,
         ];
