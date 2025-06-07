@@ -74,8 +74,29 @@ O sistema segue o seguinte fluxo para processamento de pagamentos:
 1. Autenticação do usuário
 2. Preenchimento do formulário de pagamento
 3. Seleção do método de pagamento
-4. Processamento do pagamento através da API Asaas
-5. Exibição da confirmação do pagamento com informações específicas do método escolhido
+4. Criação de um registro de pagamento pendente no banco de dados
+5. Envio do pagamento para processamento assíncrono via RabbitMQ
+6. Exibição imediata da página de confirmação com status pendente
+7. Processamento do pagamento em background pelo worker
+8. Atualização do status do pagamento no banco de dados
+
+### Processamento Assíncrono
+
+O sistema utiliza processamento assíncrono para melhorar a experiência do usuário:
+
+1. Quando você finaliza um pagamento, o sistema:
+   - Cria um registro de pagamento com status "pendente"
+   - Envia os dados para processamento em background
+   - Exibe imediatamente a página de confirmação
+
+2. Enquanto isso, um worker processa o pagamento em background:
+   - Comunica-se com a API Asaas
+   - Atualiza o status do pagamento no banco de dados
+
+Benefícios deste modelo:
+- Resposta mais rápida para o usuário
+- Maior resiliência a falhas temporárias da API de pagamento
+- Melhor experiência do usuário em conexões lentas
 
 ## Documentação da API Asaas
 

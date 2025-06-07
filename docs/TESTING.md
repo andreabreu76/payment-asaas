@@ -38,11 +38,24 @@ Os testes de autenticação verificam:
 
 Os testes de processamento de pagamentos verificam:
 - Exibição do formulário de pagamento
-- Processamento de pagamentos via boleto
-- Processamento de pagamentos via cartão de crédito
-- Processamento de pagamentos via PIX
+- Criação de registros de pagamento pendentes para boleto
+- Criação de registros de pagamento pendentes para cartão de crédito
+- Criação de registros de pagamento pendentes para PIX
+- Envio correto de jobs para a fila RabbitMQ
 - Validação de dados de entrada
 - Exibição da página de confirmação de pagamento
+
+#### Testes de Processamento Assíncrono
+
+Os testes de processamento assíncrono utilizam mocks para verificar:
+- Criação correta do job ProcessPayment
+- Envio do job para a fila RabbitMQ
+- Processamento do pagamento pelo worker
+- Atualização do status do pagamento no banco de dados
+
+Para testar o processamento assíncrono sem depender do RabbitMQ, os testes utilizam:
+- `Queue::fake()` para interceptar jobs enviados para a fila
+- `Queue::assertPushed()` para verificar se o job foi enviado corretamente
 
 ### Executando os Testes
 

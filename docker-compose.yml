@@ -75,6 +75,24 @@ services:
     networks:
       - payment-asaas-network
 
+  # Queue Worker Service
+  worker:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: payment-asaas-worker
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan queue:work rabbitmq --queue=payments
+    volumes:
+      - ./:/var/www
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    networks:
+      - payment-asaas-network
+    depends_on:
+      - php
+      - rabbitmq
+
 networks:
   payment-asaas-network:
     driver: bridge

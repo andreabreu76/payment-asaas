@@ -58,30 +58,44 @@ flowchart TD
 
     B --> C[Usuário preenche dados e seleciona método de pagamento]
     C --> D{Qual método de pagamento?}
-    D -->|Boleto| E1[Processamento de Boleto]
-    D -->|Cartão de Crédito| E2[Processamento de Cartão]
-    D -->|PIX| E3[Processamento de PIX]
+    D -->|Boleto| E1[Criação de registro de pagamento pendente]
+    D -->|Cartão de Crédito| E2[Criação de registro de pagamento pendente]
+    D -->|PIX| E3[Criação de registro de pagamento pendente]
 
-    E1 --> F1[API Asaas - Criação de Boleto]
-    E2 --> F2[API Asaas - Processamento de Cartão]
-    E3 --> F3[API Asaas - Geração de PIX]
+    E1 --> F1[Envio para fila RabbitMQ]
+    E2 --> F1
+    E3 --> F1
 
-    F1 --> G[Redirecionamento para página de agradecimento]
-    F2 --> G
-    F3 --> G
+    F1 --> G[Redirecionamento para página de agradecimento com status pendente]
 
-    G --> H{Qual foi o método?}
-    H -->|Boleto| I1[Exibição do link do boleto]
-    H -->|Cartão| I2[Exibição da confirmação do cartão]
-    H -->|PIX| I3[Exibição do QR Code e código PIX]
+    G --> H[Worker processa pagamento em background]
+    H --> I[API Asaas - Processamento do pagamento]
+    I --> J[Atualização do status do pagamento no banco de dados]
 
-    I1 --> J[Usuário finaliza o processo]
-    I2 --> J
-    I3 --> J
-
-    J --> K[Usuário pode fazer logout]
-    K --> AA
+    G --> K[Usuário pode verificar status posteriormente]
+    K --> L[Usuário pode fazer logout]
+    L --> AA
 ```
+
+## Processamento Assíncrono de Pagamentos
+
+O sistema utiliza processamento assíncrono de pagamentos através do RabbitMQ para melhorar a experiência do usuário e a resiliência do sistema:
+
+1. Quando um usuário submete um pagamento, o sistema:
+   - Cria um registro de pagamento com status "pendente" no banco de dados
+   - Envia uma mensagem para a fila RabbitMQ com os detalhes do pagamento
+   - Redireciona o usuário para a página de agradecimento imediatamente
+
+2. Um worker em background:
+   - Consome as mensagens da fila RabbitMQ
+   - Processa o pagamento através da API Asaas
+   - Atualiza o status do pagamento no banco de dados
+
+Benefícios desta abordagem:
+- Resposta mais rápida para o usuário
+- Maior resiliência a falhas temporárias da API de pagamento
+- Capacidade de processar pagamentos em lote
+- Melhor escalabilidade do sistema
 
 ## Fluxo de CI/CD
 
