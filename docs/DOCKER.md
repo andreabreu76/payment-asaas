@@ -28,7 +28,7 @@ docker-compose --version
 
 ## Arquitetura do Ambiente Docker
 
-O arquivo `docker-compose.yml` define quatro serviços principais:
+O arquivo `docker-compose.yml` define cinco serviços principais:
 
 1. **PHP**: Container PHP-FPM 8.2 para executar a aplicação Laravel
    - Baseado na imagem oficial `php:8.2-fpm`
@@ -50,6 +50,12 @@ O arquivo `docker-compose.yml` define quatro serviços principais:
    - Utiliza a imagem oficial `rabbitmq:3-management`
    - Interface de gerenciamento web disponível
    - Configurável através de variáveis de ambiente no arquivo `.env`
+
+5. **Worker**: Container para processamento assíncrono de pagamentos
+   - Baseado na mesma imagem do container PHP
+   - Executa o comando `php artisan queue:work rabbitmq --queue=payments`
+   - Processa as mensagens da fila RabbitMQ em background
+   - Compartilha o mesmo volume do container PHP para acesso ao código
 
 ## Serviços e Portas
 

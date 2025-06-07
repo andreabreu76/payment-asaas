@@ -33,9 +33,16 @@ cd payment-asaas-api
 cp .env.example .env
 ```
 
-3. Configure o arquivo .env com suas credenciais do Asaas Sandbox:
+3. Configure o arquivo .env com suas credenciais do Asaas Sandbox e configurações do RabbitMQ:
 ```
 ASAAS_API_KEY=sua_api_key_aqui
+QUEUE_CONNECTION=rabbitmq
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_VHOST=/
+RABBITMQ_QUEUE=payments
 ```
 
 4. Inicie os containers Docker:
@@ -83,9 +90,16 @@ composer install
 cp .env.example .env
 ```
 
-4. Configure o arquivo .env com suas credenciais do Asaas Sandbox:
+4. Configure o arquivo .env com suas credenciais do Asaas Sandbox e configurações do RabbitMQ:
 ```
 ASAAS_API_KEY=sua_api_key_aqui
+QUEUE_CONNECTION=rabbitmq
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_VHOST=/
+RABBITMQ_QUEUE=payments
 ```
 
 5. Gere a chave da aplicação:
@@ -113,4 +127,9 @@ php artisan jwt:secret
 php -c php.ini artisan serve
 ```
 
-10. Acesse o sistema em http://localhost:8000
+10. Em um terminal separado, inicie o worker para processar a fila de pagamentos:
+```bash
+php -c php.ini artisan queue:work rabbitmq --queue=payments
+```
+
+11. Acesse o sistema em http://localhost:8000

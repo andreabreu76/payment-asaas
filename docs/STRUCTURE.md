@@ -24,7 +24,10 @@ payment-asaas-api/
 │   │   │   └── PaymentController.php  # Controlador principal para processamento de pagamentos
 │   │   └── Resources/
 │   │       └── PaymentResource.php    # Recurso para padronização das respostas da API
+│   ├── Jobs/
+│   │   └── ProcessPayment.php         # Job para processamento assíncrono de pagamentos
 │   └── Models/
+│       ├── Payment.php                # Modelo para armazenamento de pagamentos
 │       └── User.php                   # Modelo de usuário com suporte a JWT
 ├── database/
 │   └── seeders/
@@ -67,12 +70,17 @@ payment-asaas-api/
 
 - `app/Http/Controllers/PaymentController.php`: Controlador responsável pelo processamento de pagamentos
   - `index()`: Exibe o formulário de pagamento
-  - `process()`: Processa o pagamento com base no método selecionado
+  - `process()`: Cria um registro de pagamento pendente e envia para a fila RabbitMQ
   - `thankYou()`: Exibe a página de agradecimento com detalhes do pagamento
   - `createCustomer()`: Cria um cliente na API Asaas
-  - `processBoleto()`: Processa pagamentos via boleto
-  - `processCreditCard()`: Processa pagamentos via cartão de crédito
-  - `processPix()`: Processa pagamentos via PIX
+  - `preparePaymentData()`: Prepara os dados do pagamento com base no método selecionado
+  - `getPaymentMethodName()`: Retorna o nome do método de pagamento
+
+- `app/Jobs/ProcessPayment.php`: Job para processamento assíncrono de pagamentos
+  - `handle()`: Processa o pagamento através da API Asaas e atualiza o status no banco de dados
+
+- `app/Models/Payment.php`: Modelo para armazenamento de pagamentos
+  - Armazena informações sobre pagamentos, incluindo status, método e dados de resposta da API
 
 - `app/Http/Resources/PaymentResource.php`: Recurso para padronização das respostas da API
 
