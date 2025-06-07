@@ -98,6 +98,87 @@ Benefícios deste modelo:
 - Maior resiliência a falhas temporárias da API de pagamento
 - Melhor experiência do usuário em conexões lentas
 
+## Monitoramento e Observabilidade
+
+### Health Check API
+
+O sistema fornece um endpoint de health check para monitorar o status da aplicação e seus serviços:
+
+- **Endpoint**: `/api/health`
+- **Método**: GET
+- **Resposta**: JSON com status da aplicação, banco de dados e serviço de filas
+
+Exemplo de resposta:
+```json
+{
+  "status": "ok",
+  "timestamp": "2023-06-01T12:34:56+00:00",
+  "services": {
+    "app": {
+      "status": "ok",
+      "version": "1.0.0"
+    },
+    "database": {
+      "status": "ok",
+      "connection": "mysql"
+    },
+    "queue": {
+      "status": "ok",
+      "connection": "rabbitmq"
+    }
+  }
+}
+```
+
+### Logging Estruturado
+
+O sistema utiliza logging estruturado para a integração com o Asaas, facilitando o diagnóstico de problemas:
+
+- Todos os logs relacionados à integração Asaas são armazenados em `storage/logs/asaas.log`
+- Os logs incluem contexto adicional como:
+  - ID da requisição (request_id)
+  - ID do usuário
+  - Endereço IP
+  - User Agent
+
+Para desenvolvedores, a classe `AsaasLogger` está disponível para registrar eventos:
+
+```php
+use App\Services\AsaasLogger;
+
+// Exemplos de uso
+AsaasLogger::info('Pagamento iniciado', ['payment_id' => $id]);
+AsaasLogger::error('Falha no processamento', ['payment_id' => $id, 'error' => $e->getMessage()]);
+AsaasLogger::debug('Dados enviados para API', ['payload' => $data]);
+```
+
+### Laravel Horizon
+
+O Laravel Horizon fornece um dashboard para monitoramento e gerenciamento das filas RabbitMQ:
+
+1. Acesse o dashboard em `/horizon` (requer autenticação)
+2. No dashboard você pode:
+   - Visualizar jobs em execução, pendentes e falhos
+   - Monitorar a performance dos workers
+   - Visualizar métricas de processamento
+   - Reiniciar jobs falhos
+   - Pausar e retomar workers
+
+### NewRelic Monitoring
+
+O sistema está integrado com NewRelic para monitoramento de performance:
+
+- Métricas de performance são automaticamente enviadas para o NewRelic
+- O dashboard do NewRelic mostra:
+  - Tempo de resposta da aplicação
+  - Taxa de erros
+  - Throughput
+  - Uso de recursos
+  - Transações mais lentas
+  - Erros mais frequentes
+
+Para acessar o dashboard do NewRelic, faça login na sua conta NewRelic e selecione a aplicação configurada no arquivo `.env`.
+
 ## Documentação da API Asaas
 
 Para mais informações sobre a API do Asaas, consulte a [documentação oficial](https://asaasv3.docs.apiary.io/).

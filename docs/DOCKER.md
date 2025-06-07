@@ -28,13 +28,14 @@ docker-compose --version
 
 ## Arquitetura do Ambiente Docker
 
-O arquivo `docker-compose.yml` define cinco serviços principais:
+O arquivo `docker-compose.yml` define sete serviços principais:
 
 1. **PHP**: Container PHP-FPM 8.2 para executar a aplicação Laravel
    - Baseado na imagem oficial `php:8.2-fpm`
    - Inclui extensões necessárias: pdo_mysql, mbstring, exif, pcntl, bcmath, gd, zip
    - Composer pré-instalado para gerenciamento de dependências
    - Configuração personalizada via arquivo `php.ini`
+   - Integração com NewRelic para monitoramento de performance
 
 2. **Nginx**: Servidor web que atua como proxy reverso para o PHP
    - Baseado na imagem `nginx:1.21-alpine`
@@ -57,6 +58,18 @@ O arquivo `docker-compose.yml` define cinco serviços principais:
    - Processa as mensagens da fila RabbitMQ em background
    - Compartilha o mesmo volume do container PHP para acesso ao código
 
+6. **NewRelic**: Serviço de monitoramento de performance da aplicação
+   - Utiliza a imagem oficial `newrelic/php-daemon:latest`
+   - Coleta métricas de performance da aplicação PHP
+   - Configurável através de variáveis de ambiente no arquivo `.env`
+   - Fornece insights sobre performance, erros e gargalos da aplicação
+
+7. **Horizon**: Dashboard para monitoramento e gerenciamento de filas
+   - Baseado na mesma imagem do container PHP
+   - Executa o comando `php artisan horizon`
+   - Fornece interface web para monitoramento das filas RabbitMQ
+   - Permite visualizar e gerenciar jobs, workers e filas
+
 ## Serviços e Portas
 
 - **Aplicação Web**: http://localhost
@@ -69,6 +82,10 @@ O arquivo `docker-compose.yml` define cinco serviços principais:
   - **AMQP**: acessível internamente via `rabbitmq:5672` e externamente via `localhost:5672`
   - **Usuário**: guest (configurável no .env via RABBITMQ_USER)
   - **Senha**: guest (configurável no .env via RABBITMQ_PASSWORD)
+- **Horizon Dashboard**: http://localhost/horizon (requer autenticação)
+  - Interface web para monitoramento e gerenciamento das filas
+- **Health Check API**: http://localhost/api/health
+  - Endpoint para verificar o status da aplicação e seus serviços
 
 ## Comandos Docker úteis para desenvolvimento
 

@@ -57,6 +57,27 @@ Para testar o processamento assíncrono sem depender do RabbitMQ, os testes util
 - `Queue::fake()` para interceptar jobs enviados para a fila
 - `Queue::assertPushed()` para verificar se o job foi enviado corretamente
 
+#### Testes do Health Check
+
+Os testes do endpoint de health check verificam:
+- Resposta correta do endpoint `/api/health`
+- Status da aplicação
+- Status da conexão com o banco de dados
+- Status da conexão com o RabbitMQ
+- Código de status HTTP correto (200 para healthy, 503 para unhealthy)
+
+#### Testes de Logging Estruturado
+
+Os testes de logging estruturado verificam:
+- Criação correta do contexto de log pelo middleware AsaasLogContext
+- Adição do request_id aos headers de resposta
+- Registro correto de logs no canal 'asaas'
+- Inclusão de contexto nos logs (request_id, user_id, ip, user_agent)
+
+Para testar o logging sem gerar arquivos de log reais, os testes utilizam:
+- `Log::fake()` para interceptar chamadas de log
+- `Log::assertLogged()` para verificar se os logs foram registrados corretamente
+
 ### Executando os Testes
 
 Para executar todos os testes:

@@ -33,7 +33,7 @@ cd payment-asaas-api
 cp .env.example .env
 ```
 
-3. Configure o arquivo .env com suas credenciais do Asaas Sandbox e configurações do RabbitMQ:
+3. Configure o arquivo .env com suas credenciais do Asaas Sandbox, configurações do RabbitMQ, NewRelic e Horizon:
 ```
 ASAAS_API_KEY=sua_api_key_aqui
 QUEUE_CONNECTION=rabbitmq
@@ -43,6 +43,15 @@ RABBITMQ_USER=guest
 RABBITMQ_PASSWORD=guest
 RABBITMQ_VHOST=/
 RABBITMQ_QUEUE=payments
+
+# NewRelic Configuration
+NEW_RELIC_LICENSE_KEY=your_license_key_here
+NEW_RELIC_APP_NAME=Payment Asaas API
+NEW_RELIC_DAEMON_ADDRESS=newrelic:31339
+
+# Horizon Configuration
+HORIZON_DOMAIN=null
+HORIZON_PREFIX=payment_asaas_horizon:
 ```
 
 4. Inicie os containers Docker:
@@ -90,7 +99,7 @@ composer install
 cp .env.example .env
 ```
 
-4. Configure o arquivo .env com suas credenciais do Asaas Sandbox e configurações do RabbitMQ:
+4. Configure o arquivo .env com suas credenciais do Asaas Sandbox, configurações do RabbitMQ, NewRelic e Horizon:
 ```
 ASAAS_API_KEY=sua_api_key_aqui
 QUEUE_CONNECTION=rabbitmq
@@ -100,6 +109,15 @@ RABBITMQ_USER=guest
 RABBITMQ_PASSWORD=guest
 RABBITMQ_VHOST=/
 RABBITMQ_QUEUE=payments
+
+# NewRelic Configuration
+NEW_RELIC_LICENSE_KEY=your_license_key_here
+NEW_RELIC_APP_NAME=Payment Asaas API
+NEW_RELIC_DAEMON_ADDRESS=newrelic:31339
+
+# Horizon Configuration
+HORIZON_DOMAIN=null
+HORIZON_PREFIX=payment_asaas_horizon:
 ```
 
 5. Gere a chave da aplicação:
@@ -132,4 +150,10 @@ php -c php.ini artisan serve
 php -c php.ini artisan queue:work rabbitmq --queue=payments
 ```
 
-11. Acesse o sistema em http://localhost:8000
+11. Em outro terminal separado, inicie o Laravel Horizon para monitoramento das filas:
+```bash
+php -c php.ini artisan horizon
+```
+
+12. Acesse o sistema em http://localhost:8000
+13. Acesse o dashboard do Horizon em http://localhost:8000/horizon (requer autenticação)

@@ -21,14 +21,21 @@ payment-asaas-api/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── AuthController.php     # Controlador de autenticação
+│   │   │   ├── HealthController.php   # Controlador para verificação de saúde do sistema
 │   │   │   └── PaymentController.php  # Controlador principal para processamento de pagamentos
+│   │   ├── Middleware/
+│   │   │   └── AsaasLogContext.php    # Middleware para adicionar contexto aos logs
 │   │   └── Resources/
 │   │       └── PaymentResource.php    # Recurso para padronização das respostas da API
 │   ├── Jobs/
 │   │   └── ProcessPayment.php         # Job para processamento assíncrono de pagamentos
-│   └── Models/
-│       ├── Payment.php                # Modelo para armazenamento de pagamentos
-│       └── User.php                   # Modelo de usuário com suporte a JWT
+│   ├── Models/
+│   │   ├── Payment.php                # Modelo para armazenamento de pagamentos
+│   │   └── User.php                   # Modelo de usuário com suporte a JWT
+│   └── Services/
+│       └── AsaasLogger.php            # Serviço para logging estruturado da integração Asaas
+├── config/
+│   └── horizon.php                    # Configuração do Laravel Horizon
 ├── database/
 │   └── seeders/
 │       ├── AdminUserSeeder.php        # Seeder para criar o usuário admin
@@ -43,7 +50,8 @@ payment-asaas-api/
 │           ├── index.blade.php        # Página com formulário de pagamento
 │           └── thank-you.blade.php    # Página de agradecimento após o pagamento
 └── routes/
-    └── web.php                        # Definição das rotas da aplicação
+    ├── api.php                        # Definição das rotas da API
+    └── web.php                        # Definição das rotas web
 ```
 
 ## Descrição dos Arquivos Principais
@@ -98,9 +106,34 @@ payment-asaas-api/
   - Para PIX: exibe QR Code e código para cópia
   - Para cartão: exibe informações da transação
 
-- `routes/web.php`: Rotas da aplicação
+- `routes/web.php`: Rotas web da aplicação
   - `/login`: Exibe o formulário de login e processa a autenticação
   - `/logout`: Encerra a sessão do usuário
   - `/payments`: Exibe o formulário de pagamento (protegido por autenticação)
   - `/payments/process`: Processa o pagamento (protegido por autenticação)
   - `/payments/thank-you`: Exibe a página de agradecimento (protegido por autenticação)
+  - `/horizon`: Dashboard do Laravel Horizon (protegido por autenticação)
+
+- `routes/api.php`: Rotas da API
+  - `/api/health`: Endpoint para verificação de saúde do sistema
+
+### Monitoramento e Observabilidade
+
+- `app/Http/Controllers/HealthController.php`: Controlador para verificação de saúde do sistema
+  - `check()`: Verifica o status da aplicação, banco de dados e serviço de filas
+  - `checkApp()`: Verifica o status da aplicação
+  - `checkDatabase()`: Verifica a conexão com o banco de dados
+  - `checkQueue()`: Verifica a conexão com o RabbitMQ
+
+- `app/Http/Middleware/AsaasLogContext.php`: Middleware para adicionar contexto aos logs
+  - `handle()`: Adiciona request_id, user_id, ip e user_agent ao contexto dos logs
+
+- `app/Services/AsaasLogger.php`: Serviço para logging estruturado da integração Asaas
+  - `info()`: Registra logs de nível info no canal 'asaas'
+  - `error()`: Registra logs de nível error no canal 'asaas'
+  - `warning()`: Registra logs de nível warning no canal 'asaas'
+  - `debug()`: Registra logs de nível debug no canal 'asaas'
+
+- `config/horizon.php`: Configuração do Laravel Horizon
+  - Define configurações para monitoramento e gerenciamento das filas RabbitMQ
+  - Configura workers, supervisores e limites de recursos

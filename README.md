@@ -41,6 +41,11 @@ Este projeto foi desenvolvido como um portfólio para demonstrar capacidades té
 - Exibição de boleto para pagamentos via boleto
 - Exibição de QR Code e código Pix para pagamentos via Pix
 - Mensagens amigáveis em caso de erro no processamento do pagamento
+- Monitoramento e observabilidade:
+  - Endpoint de health check para monitoramento do sistema
+  - Logging estruturado para a integração Asaas
+  - Dashboard Laravel Horizon para monitoramento de filas
+  - Integração com NewRelic para monitoramento de performance
 - Testes automatizados para todas as funcionalidades principais
 - Integração contínua via GitHub Actions
 

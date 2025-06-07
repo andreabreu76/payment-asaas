@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AuthController;
+use Laravel\Horizon\Horizon;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +28,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payments/thank-you', [PaymentController::class, 'thankYou'])->name('payments.thank-you');
 });
 
-// Public welcome page
+// Redirect root to login page
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
+
+// Horizon Dashboard is automatically registered by the HorizonServiceProvider
+// No need to manually register routes here
