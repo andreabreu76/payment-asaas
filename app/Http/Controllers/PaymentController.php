@@ -25,7 +25,7 @@ class PaymentController extends Controller
      */
     public function index()
     {
-        return view('payments.index');
+        return view('payments.index')->with('errors', session('errors') ?: new \Illuminate\Support\ViewErrorBag);
     }
 
     /**
