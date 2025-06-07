@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,12 +15,19 @@ use App\Http\Controllers\PaymentController;
 |
 */
 
-// Payment Routes
-Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-Route::post('/payments/process', [PaymentController::class, 'process'])->name('payments.process');
-Route::get('/payments/thank-you', [PaymentController::class, 'thankYou'])->name('payments.thank-you');
+// Authentication Routes
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Redirect root to payments page
+// Payment Routes (protected by auth middleware)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments/process', [PaymentController::class, 'process'])->name('payments.process');
+    Route::get('/payments/thank-you', [PaymentController::class, 'thankYou'])->name('payments.thank-you');
+});
+
+// Redirect root to payments page (will be redirected to login if not authenticated)
 Route::get('/', function () {
     return redirect()->route('payments.index');
 });

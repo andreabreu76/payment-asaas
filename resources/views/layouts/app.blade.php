@@ -55,7 +55,15 @@
 <body>
     <div class="container">
         <header class="mb-4">
-            <h1 class="text-center">Sistema de Pagamentos</h1>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Sistema de Pagamentos</h1>
+                @auth
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger">Logout</button>
+                </form>
+                @endauth
+            </div>
         </header>
 
         <main>

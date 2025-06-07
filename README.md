@@ -4,6 +4,7 @@ Este projeto é um sistema de processamento de pagamentos integrado ao ambiente 
 
 ## Funcionalidades
 
+- Autenticação JWT OAuth com tela de login
 - Processamento de pagamentos com boleto, cartão de crédito e pix
 - Validação de dados do formulário
 - Exibição de boleto para pagamentos via boleto
@@ -15,12 +16,14 @@ Este projeto é um sistema de processamento de pagamentos integrado ao ambiente 
 - PHP 8.x
 - Laravel 10.x
 - Bootstrap 5.x
+- JWT (JSON Web Tokens) para autenticação
 - Asaas API v3
 
 ## Requisitos
 
 - PHP >= 8.1
 - Composer
+- Docker e Docker Compose (para o banco de dados)
 - Extensões PHP: BCMath, Ctype, Fileinfo, JSON, Mbstring, OpenSSL, PDO, Tokenizer, XML
 
 ## Instalação
@@ -51,16 +54,86 @@ ASAAS_API_KEY=sua_api_key_aqui
 php artisan key:generate
 ```
 
-6. Inicie o servidor de desenvolvimento:
+6. Inicie o banco de dados MySQL com Docker:
 ```bash
-php artisan serve
+docker-compose up -d
 ```
 
-7. Acesse o sistema em http://localhost:8000
+7. Configure o banco de dados no arquivo .env e execute as migrações e seeders:
+```bash
+php artisan migrate --seed
+```
+
+8. Gere a chave JWT:
+```bash
+php artisan jwt:secret
+```
+
+9. Use o arquivo php.ini personalizado para evitar avisos de depreciação:
+```bash
+php -c php.ini artisan serve
+```
+
+10. Acesse o sistema em http://localhost:8000
+
+11. (Opcional) Acesse o phpMyAdmin em http://localhost:8080 para gerenciar o banco de dados
+
+## Docker
+
+Este projeto utiliza Docker para fornecer um ambiente de banco de dados MySQL consistente. O arquivo `docker-compose.yml` define dois serviços:
+
+1. **MySQL**: Banco de dados MySQL 8.0 para armazenar os dados da aplicação
+2. **phpMyAdmin**: Interface web para gerenciar o banco de dados MySQL
+
+O banco de dados MySQL é configurado para ser acessível em `127.0.0.1:3306` com as seguintes credenciais:
+- **Usuário**: laravel
+- **Senha**: password
+- **Banco de dados**: laravel
+
+### Comandos Docker úteis
+
+- Iniciar os containers:
+```bash
+docker-compose up -d
+```
+
+- Verificar o status dos containers:
+```bash
+docker-compose ps
+```
+
+- Parar os containers:
+```bash
+docker-compose down
+```
+
+- Ver logs dos containers:
+```bash
+docker-compose logs
+```
+
+### Configuração PHP
+
+O projeto inclui um arquivo `php.ini` personalizado para resolver avisos de depreciação relacionados às configurações de sessão. Para usar este arquivo ao executar comandos PHP, use a opção `-c`:
+
+```bash
+php -c php.ini artisan <comando>
+```
 
 ## Uso
 
-1. Acesse a página inicial do sistema
+### Autenticação
+
+1. Acesse o sistema e você será redirecionado para a tela de login
+2. Use as credenciais padrão:
+   - Email: admin@example.com
+   - Senha: admin
+3. Após o login bem-sucedido, você será redirecionado para a página de pagamentos
+4. Para sair do sistema, clique no botão "Logout" no canto superior direito
+
+### Processamento de Pagamentos
+
+1. Após o login, você verá o formulário de pagamento
 2. Preencha o formulário com seus dados pessoais e o valor do pagamento
 3. Selecione o método de pagamento (Boleto, Cartão de Crédito ou Pix)
 4. Preencha os dados específicos do método de pagamento selecionado
@@ -76,11 +149,20 @@ payment-asaas-api/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/
+│   │   │   ├── AuthController.php     # Controlador de autenticação
 │   │   │   └── PaymentController.php  # Controlador principal para processamento de pagamentos
 │   │   └── Resources/
 │   │       └── PaymentResource.php    # Recurso para padronização das respostas da API
+│   └── Models/
+│       └── User.php                   # Modelo de usuário com suporte a JWT
+├── database/
+│   └── seeders/
+│       ├── AdminUserSeeder.php        # Seeder para criar o usuário admin
+│       └── DatabaseSeeder.php         # Seeder principal
 ├── resources/
 │   └── views/
+│       ├── auth/
+│       │   └── login.blade.php        # Página de login
 │       ├── layouts/
 │       │   └── app.blade.php          # Template principal do layout da aplicação
 │       └── payments/
@@ -91,6 +173,26 @@ payment-asaas-api/
 ```
 
 ### Descrição dos Arquivos Principais
+
+#### Autenticação
+
+- `app/Models/User.php`: Modelo de usuário com suporte a JWT
+  - Implementa a interface JWTSubject
+  - Métodos para obter o identificador JWT e claims personalizados
+
+- `app/Http/Controllers/AuthController.php`: Controlador responsável pela autenticação
+  - `showLoginForm()`: Exibe o formulário de login
+  - `login()`: Processa a tentativa de login e gera o token JWT
+  - `logout()`: Encerra a sessão do usuário
+
+- `resources/views/auth/login.blade.php`: Página de login
+  - Formulário para autenticação com email e senha
+  - Exibe credenciais padrão para facilitar o acesso
+
+- `database/seeders/AdminUserSeeder.php`: Seeder para criar o usuário admin
+  - Cria um usuário com credenciais admin@example.com:admin
+
+#### Processamento de Pagamentos
 
 - `app/Http/Controllers/PaymentController.php`: Controlador responsável pelo processamento de pagamentos
   - `index()`: Exibe o formulário de pagamento
@@ -104,6 +206,7 @@ payment-asaas-api/
 - `app/Http/Resources/PaymentResource.php`: Recurso para padronização das respostas da API
 
 - `resources/views/layouts/app.blade.php`: Template principal do layout da aplicação
+  - Inclui botão de logout para usuários autenticados
 
 - `resources/views/payments/index.blade.php`: Página do formulário de pagamento
   - Formulário para coleta de dados pessoais
@@ -117,15 +220,24 @@ payment-asaas-api/
   - Para cartão: exibe informações da transação
 
 - `routes/web.php`: Rotas da aplicação
-  - `/payments`: Exibe o formulário de pagamento
-  - `/payments/process`: Processa o pagamento
-  - `/payments/thank-you`: Exibe a página de agradecimento
+  - `/login`: Exibe o formulário de login e processa a autenticação
+  - `/logout`: Encerra a sessão do usuário
+  - `/payments`: Exibe o formulário de pagamento (protegido por autenticação)
+  - `/payments/process`: Processa o pagamento (protegido por autenticação)
+  - `/payments/thank-you`: Exibe a página de agradecimento (protegido por autenticação)
 
 ### Fluxo do Sistema de Pagamento
 
 ```mermaid
 flowchart TD
-    A[Usuário acessa o sistema] --> B[Exibição do formulário de pagamento]
+    A[Usuário acessa o sistema] --> AA[Redirecionamento para tela de login]
+    AA --> AB[Usuário insere credenciais]
+    AB --> AC{Credenciais válidas?}
+    AC -->|Não| AD[Exibe mensagem de erro]
+    AD --> AB
+    AC -->|Sim| AE[Gera token JWT]
+    AE --> B[Exibição do formulário de pagamento]
+
     B --> C[Usuário preenche dados e seleciona método de pagamento]
     C --> D{Qual método de pagamento?}
     D -->|Boleto| E1[Processamento de Boleto]
@@ -148,6 +260,9 @@ flowchart TD
     I1 --> J[Usuário finaliza o processo]
     I2 --> J
     I3 --> J
+
+    J --> K[Usuário pode fazer logout]
+    K --> AA
 ```
 
 ## Documentação da API Asaas
