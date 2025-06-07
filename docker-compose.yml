@@ -4,9 +4,19 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+      args:
+        NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+        NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME}
+        NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
+        NEW_RELIC_AGENT_VERSION: ${NEW_RELIC_AGENT_VERSION}
     container_name: payment-asaas-php
     restart: unless-stopped
     working_dir: /var/www
+    entrypoint: ["/usr/local/bin/docker-php-entrypoint-custom"]
+    environment:
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME}
+      NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
     volumes:
       - ./:/var/www
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
@@ -14,6 +24,8 @@ services:
       - payment-asaas-network
     depends_on:
       - mysql
+      - newrelic
+      - redis
 
   # Nginx Service
   nginx:
@@ -51,15 +63,15 @@ services:
     networks:
       - payment-asaas-network
 
-#  # Redis Service
-#  redis:
-#    image: redis:alpine
-#    container_name: payment-asaas-redis
-#    restart: unless-stopped
-#    ports:
-#      - "${REDIS_PORT:-6379}:6379"
-#    networks:
-#      - payment-asaas-network
+  # Redis Service
+  redis:
+    image: redis:alpine
+    container_name: payment-asaas-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - payment-asaas-network
 
   # RabbitMQ Service
   rabbitmq:
@@ -80,10 +92,20 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+      args:
+        NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+        NEW_RELIC_APP_NAME: "${NEW_RELIC_APP_NAME} Worker"
+        NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
+        NEW_RELIC_AGENT_VERSION: ${NEW_RELIC_AGENT_VERSION}
     container_name: payment-asaas-worker
     restart: unless-stopped
     working_dir: /var/www
+    entrypoint: ["/usr/local/bin/docker-php-entrypoint-custom"]
     command: php artisan queue:work rabbitmq --queue=payments
+    environment:
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+      NEW_RELIC_APP_NAME: "${NEW_RELIC_APP_NAME} Worker"
+      NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
     volumes:
       - ./:/var/www
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
@@ -92,6 +114,8 @@ services:
     depends_on:
       - php
       - rabbitmq
+      - newrelic
+      - redis
 
   # NewRelic Service
   newrelic:
@@ -101,19 +125,32 @@ services:
     environment:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       NEW_RELIC_APP_NAME: ${NEW_RELIC_APP_NAME:-Payment Asaas API}
-      NEW_RELIC_DAEMON_ADDRESS: newrelic:31339
+    ports:
+      - "31339:31339"
     networks:
       - payment-asaas-network
+    volumes:
+      - newrelic-logs:/var/log/newrelic
 
   # Horizon Service
   horizon:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+      args:
+        NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+        NEW_RELIC_APP_NAME: "${NEW_RELIC_APP_NAME} Horizon"
+        NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
+        NEW_RELIC_AGENT_VERSION: ${NEW_RELIC_AGENT_VERSION}
     container_name: payment-asaas-horizon
     restart: unless-stopped
     working_dir: /var/www
+    entrypoint: ["/usr/local/bin/docker-php-entrypoint-custom"]
     command: php artisan horizon
+    environment:
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+      NEW_RELIC_APP_NAME: "${NEW_RELIC_APP_NAME} Horizon"
+      NEW_RELIC_DAEMON_ADDRESS: ${NEW_RELIC_DAEMON_ADDRESS}
     volumes:
       - ./:/var/www
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
@@ -122,6 +159,8 @@ services:
     depends_on:
       - php
       - rabbitmq
+      - newrelic
+      - redis
 
 networks:
   payment-asaas-network:
@@ -129,4 +168,6 @@ networks:
 
 volumes:
   mysql-data:
+    driver: local
+  newrelic-logs:
     driver: local

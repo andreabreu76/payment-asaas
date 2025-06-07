@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Update New Relic configuration with environment variables
+if [ -f /usr/local/etc/php/conf.d/newrelic.ini ]; then
+    sed -i \
+        -e "s/newrelic.license[[:space:]]*=[[:space:]]*.*/newrelic.license = ${NEW_RELIC_LICENSE_KEY}/" \
+        -e "s/newrelic.appname[[:space:]]*=[[:space:]]*.*/newrelic.appname = ${NEW_RELIC_APP_NAME}/" \
+        -e "s/;newrelic.daemon.address[[:space:]]*=[[:space:]]*.*/newrelic.daemon.address = ${NEW_RELIC_DAEMON_ADDRESS}/" \
+        /usr/local/etc/php/conf.d/newrelic.ini
+
+    echo "[INFO] New Relic configuration updated with environment variables"
+fi
+
+# Execute the command directly instead of calling the original entrypoint
+if [ "$1" = "php-fpm" ]; then
+    exec php-fpm
+else
+    exec "$@"
+fi

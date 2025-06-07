@@ -126,6 +126,7 @@ Para informações mais detalhadas sobre o projeto, consulte os seguintes docume
 - [Guia de Uso](docs/USAGE.md)
 - [Testes e Integração Contínua](docs/TESTING.md)
 - [Estrutura do Projeto](docs/STRUCTURE.md)
+- [Integração com NewRelic](docs/NEWRELIC.md)
 
 ## Documentação da API Asaas
 
