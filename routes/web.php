@@ -27,7 +27,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payments/thank-you', [PaymentController::class, 'thankYou'])->name('payments.thank-you');
 });
 
-// Public welcome page
+// Redirect root to login page
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
