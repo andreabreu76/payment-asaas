@@ -6,11 +6,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use App\Jobs\ProcessPayment;
+use App\Models\Payment;
 use App\Models\User;
 
 class PaymentControllerTest extends TestCase
 {
-    use WithFaker;
+    use RefreshDatabase, WithFaker;
 
     /**
      * Setup the test environment.
@@ -43,23 +46,12 @@ class PaymentControllerTest extends TestCase
      */
     public function test_payment_can_be_processed_with_boleto(): void
     {
-        // Mock the HTTP responses for API calls
+        // Mock the queue so jobs are not actually dispatched
+        Queue::fake();
+
+        // Mock the HTTP responses for customer API call
         Http::fake([
             '*customers*' => Http::response(['id' => 'cus_123456'], 200),
-            '*payments*' => Http::response([
-                'id' => 'pay_123456',
-                'customer' => 'cus_123456',
-                'value' => 100.00,
-                'netValue' => 95.00,
-                'billingType' => 'BOLETO',
-                'status' => 'PENDING',
-                'dueDate' => '2023-12-31',
-                'description' => 'Pagamento via Boleto',
-                'invoiceUrl' => 'https://example.com/invoice',
-                'bankSlipUrl' => 'https://example.com/bankslip',
-                'dateCreated' => '2023-01-01',
-                'lastUpdateDate' => '2023-01-02',
-            ], 200),
         ]);
 
         // Submit a payment form with boleto
@@ -75,15 +67,28 @@ class PaymentControllerTest extends TestCase
         // Assert the user is redirected to the thank you page
         $response->assertRedirect('/payments/thank-you');
 
-        // Assert the API was called with the correct data
+        // Assert the customer API was called with the correct data
         Http::assertSent(function ($request) {
             return $request->url() == config('app.asaas_api_url') . '/customers' &&
                    $request->data()['name'] == 'Test User';
         });
 
-        Http::assertSent(function ($request) {
-            return $request->url() == config('app.asaas_api_url') . '/payments' &&
-                   $request->data()['billingType'] == 'BOLETO';
+        // Assert a payment record was created in the database
+        $this->assertDatabaseHas('payments', [
+            'customer_id' => 'cus_123456',
+            'billing_type' => 'BOLETO',
+            'amount' => 100.00,
+            'status' => 'pending',
+        ]);
+
+        // Get the payment that was just created
+        $payment = Payment::where('customer_id', 'cus_123456')
+                          ->where('billing_type', 'BOLETO')
+                          ->first();
+
+        // Assert the ProcessPayment job was dispatched with the payment
+        Queue::assertPushed(ProcessPayment::class, function ($job) use ($payment) {
+            return $job->getPayment()->id === $payment->id;
         });
     }
 
@@ -92,24 +97,12 @@ class PaymentControllerTest extends TestCase
      */
     public function test_payment_can_be_processed_with_credit_card(): void
     {
-        // Mock the HTTP responses for API calls
+        // Mock the queue so jobs are not actually dispatched
+        Queue::fake();
+
+        // Mock the HTTP responses for customer API call
         Http::fake([
             '*customers*' => Http::response(['id' => 'cus_123456'], 200),
-            '*payments*' => Http::response([
-                'id' => 'pay_123456',
-                'customer' => 'cus_123456',
-                'value' => 100.00,
-                'netValue' => 95.00,
-                'billingType' => 'CREDIT_CARD',
-                'status' => 'CONFIRMED',
-                'dueDate' => '2023-12-31',
-                'description' => 'Pagamento via Cartão de Crédito',
-                'invoiceUrl' => 'https://example.com/invoice',
-                'creditCardBrand' => 'VISA',
-                'creditCardNumber' => '**** **** **** 1234',
-                'dateCreated' => '2023-01-01',
-                'lastUpdateDate' => '2023-01-02',
-            ], 200),
         ]);
 
         // Submit a payment form with credit card
@@ -134,10 +127,28 @@ class PaymentControllerTest extends TestCase
         // Assert the user is redirected to the thank you page
         $response->assertRedirect('/payments/thank-you');
 
-        // Assert the API was called with the correct data
+        // Assert the customer API was called with the correct data
         Http::assertSent(function ($request) {
-            return $request->url() == config('app.asaas_api_url') . '/payments' &&
-                   $request->data()['billingType'] == 'CREDIT_CARD';
+            return $request->url() == config('app.asaas_api_url') . '/customers' &&
+                   $request->data()['name'] == 'Test User';
+        });
+
+        // Assert a payment record was created in the database
+        $this->assertDatabaseHas('payments', [
+            'customer_id' => 'cus_123456',
+            'billing_type' => 'CREDIT_CARD',
+            'amount' => 100.00,
+            'status' => 'pending',
+        ]);
+
+        // Get the payment that was just created
+        $payment = Payment::where('customer_id', 'cus_123456')
+                          ->where('billing_type', 'CREDIT_CARD')
+                          ->first();
+
+        // Assert the ProcessPayment job was dispatched with the payment
+        Queue::assertPushed(ProcessPayment::class, function ($job) use ($payment) {
+            return $job->getPayment()->id === $payment->id;
         });
     }
 
@@ -146,24 +157,12 @@ class PaymentControllerTest extends TestCase
      */
     public function test_payment_can_be_processed_with_pix(): void
     {
-        // Mock the HTTP responses for API calls
+        // Mock the queue so jobs are not actually dispatched
+        Queue::fake();
+
+        // Mock the HTTP responses for customer API call
         Http::fake([
             '*customers*' => Http::response(['id' => 'cus_123456'], 200),
-            '*payments*' => Http::response([
-                'id' => 'pay_123456',
-                'customer' => 'cus_123456',
-                'value' => 100.00,
-                'netValue' => 95.00,
-                'billingType' => 'PIX',
-                'status' => 'PENDING',
-                'dueDate' => '2023-12-31',
-                'description' => 'Pagamento via PIX',
-                'invoiceUrl' => 'https://example.com/invoice',
-                'pixQrCodeUrl' => 'https://example.com/pix-qrcode',
-                'pixCopiaECola' => 'pix-copy-paste-code',
-                'dateCreated' => '2023-01-01',
-                'lastUpdateDate' => '2023-01-02',
-            ], 200),
         ]);
 
         // Submit a payment form with PIX
@@ -179,10 +178,28 @@ class PaymentControllerTest extends TestCase
         // Assert the user is redirected to the thank you page
         $response->assertRedirect('/payments/thank-you');
 
-        // Assert the API was called with the correct data
+        // Assert the customer API was called with the correct data
         Http::assertSent(function ($request) {
-            return $request->url() == config('app.asaas_api_url') . '/payments' &&
-                   $request->data()['billingType'] == 'PIX';
+            return $request->url() == config('app.asaas_api_url') . '/customers' &&
+                   $request->data()['name'] == 'Test User';
+        });
+
+        // Assert a payment record was created in the database
+        $this->assertDatabaseHas('payments', [
+            'customer_id' => 'cus_123456',
+            'billing_type' => 'PIX',
+            'amount' => 100.00,
+            'status' => 'pending',
+        ]);
+
+        // Get the payment that was just created
+        $payment = Payment::where('customer_id', 'cus_123456')
+                          ->where('billing_type', 'PIX')
+                          ->first();
+
+        // Assert the ProcessPayment job was dispatched with the payment
+        Queue::assertPushed(ProcessPayment::class, function ($job) use ($payment) {
+            return $job->getPayment()->id === $payment->id;
         });
     }
 
@@ -211,18 +228,15 @@ class PaymentControllerTest extends TestCase
      */
     public function test_thank_you_page_is_displayed_with_payment_data(): void
     {
-        // Create a mock payment
+        // Create a mock payment for the session (this is what our controller stores in session now)
         $payment = [
-            'id' => 'pay_123456',
-            'customer' => 'cus_123456',
-            'value' => 100.00,
-            'netValue' => 95.00,
+            'id' => 1,
+            'status' => 'pending',
             'billingType' => 'BOLETO',
-            'status' => 'PENDING',
-            'dueDate' => '2023-12-31',
+            'value' => 100.00,
             'description' => 'Pagamento via Boleto',
-            'invoiceUrl' => 'https://example.com/invoice',
-            'bankSlipUrl' => 'https://example.com/bankslip',
+            'customer' => 'cus_123456',
+            'message' => 'Seu pagamento está sendo processado. Você receberá uma confirmação em breve.'
         ];
 
         // Store the payment in the session

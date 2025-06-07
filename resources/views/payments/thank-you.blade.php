@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="thank-you-page">
-    <div class="alert alert-success mb-4">
-        <h2 class="mb-0">Obrigado pelo seu pagamento!</h2>
+    <div class="alert alert-{{ $payment['status'] == 'pending' ? 'info' : ($payment['status'] == 'success' ? 'success' : 'danger') }} mb-4">
+        <h2 class="mb-0">{{ $payment['message'] ?? 'Obrigado pelo seu pagamento!' }}</h2>
     </div>
 
     <div class="card mb-4">
@@ -15,11 +15,13 @@
         <div class="card-body">
             <p><strong>ID do Pagamento:</strong> {{ $payment['id'] }}</p>
             <p><strong>Valor:</strong> R$ {{ number_format($payment['value'], 2, ',', '.') }}</p>
+            @if(isset($payment['dueDate']))
             <p><strong>Data de Vencimento:</strong> {{ \Carbon\Carbon::parse($payment['dueDate'])->format('d/m/Y') }}</p>
+            @endif
             <p><strong>Status:</strong>
-                @if($payment['status'] == 'PENDING')
-                    <span class="badge bg-warning">Pendente</span>
-                @elseif($payment['status'] == 'CONFIRMED' || $payment['status'] == 'RECEIVED')
+                @if($payment['status'] == 'pending')
+                    <span class="badge bg-info">Processando</span>
+                @elseif($payment['status'] == 'success' || $payment['status'] == 'CONFIRMED' || $payment['status'] == 'RECEIVED')
                     <span class="badge bg-success">Confirmado</span>
                 @elseif($payment['status'] == 'OVERDUE')
                     <span class="badge bg-danger">Vencido</span>
@@ -27,6 +29,8 @@
                     <span class="badge bg-info">Reembolsado</span>
                 @elseif($payment['status'] == 'RECEIVED_IN_CASH')
                     <span class="badge bg-success">Recebido em Dinheiro</span>
+                @elseif($payment['status'] == 'failed')
+                    <span class="badge bg-danger">Falhou</span>
                 @else
                     <span class="badge bg-secondary">{{ $payment['status'] }}</span>
                 @endif
@@ -42,6 +46,12 @@
                     {{ $payment['billingType'] }}
                 @endif
             </p>
+
+            @if($payment['status'] == 'pending')
+            <div class="alert alert-warning mt-3">
+                <p>Seu pagamento está sendo processado. Você receberá uma confirmação por e-mail quando for concluído.</p>
+            </div>
+            @endif
         </div>
     </div>
 

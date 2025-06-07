@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessPayment;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -62,28 +64,99 @@ class PaymentController extends Controller
             // Create customer if not exists
             $customer = $this->createCustomer($request);
 
-            // Process payment based on the selected method
-            switch ($request->payment_method) {
-                case 'BOLETO':
-                    $payment = $this->processBoleto($request, $customer['id']);
-                    break;
-                case 'CREDIT_CARD':
-                    $payment = $this->processCreditCard($request, $customer['id']);
-                    break;
-                case 'PIX':
-                    $payment = $this->processPix($request, $customer['id']);
-                    break;
-                default:
-                    return redirect()->back()->with('error', 'Método de pagamento inválido.');
-            }
+            // Prepare payment data based on the selected method
+            $paymentData = $this->preparePaymentData($request, $customer['id']);
+
+            // Create a payment record with pending status
+            $payment = Payment::create([
+                'amount' => $request->amount,
+                'customer_id' => $customer['id'],
+                'billing_type' => $request->payment_method,
+                'status' => 'pending',
+                'description' => 'Pagamento via ' . $this->getPaymentMethodName($request->payment_method),
+                'payment_data' => $paymentData,
+            ]);
+
+            // Dispatch the job to process the payment asynchronously
+            ProcessPayment::dispatch($payment);
 
             // Store payment information in session for the thank you page
-            session(['payment' => $payment]);
+            session(['payment' => [
+                'id' => $payment->id,
+                'status' => 'pending',
+                'billingType' => $payment->billing_type,
+                'value' => $payment->amount,
+                'description' => $payment->description,
+                'customer' => $customer['id'],
+                'message' => 'Seu pagamento está sendo processado. Você receberá uma confirmação em breve.'
+            ]]);
 
             return redirect()->route('payments.thank-you');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Erro ao processar pagamento: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Prepare payment data based on the selected method
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $customerId
+     * @return array
+     */
+    protected function preparePaymentData(Request $request, $customerId)
+    {
+        $baseData = [
+            'customer' => $customerId,
+            'billingType' => $request->payment_method,
+            'value' => $request->amount,
+            'dueDate' => now()->format('Y-m-d'),
+            'description' => 'Pagamento via ' . $this->getPaymentMethodName($request->payment_method),
+        ];
+
+        // Add method-specific data
+        switch ($request->payment_method) {
+            case 'CREDIT_CARD':
+                $baseData['creditCard'] = [
+                    'holderName' => $request->input('creditCard.holderName'),
+                    'number' => $request->input('creditCard.number'),
+                    'expiryMonth' => $request->input('creditCard.expiryMonth'),
+                    'expiryYear' => $request->input('creditCard.expiryYear'),
+                    'ccv' => $request->input('creditCard.ccv'),
+                ];
+                $baseData['creditCardHolderInfo'] = [
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'cpfCnpj' => $request->cpfCnpj,
+                    'postalCode' => $request->input('creditCard.postalCode', ''),
+                    'addressNumber' => $request->input('creditCard.addressNumber', ''),
+                    'phone' => $request->phone,
+                ];
+                break;
+
+            case 'BOLETO':
+                $baseData['dueDate'] = now()->addDays(3)->format('Y-m-d');
+                break;
+        }
+
+        return $baseData;
+    }
+
+    /**
+     * Get payment method name
+     *
+     * @param  string  $method
+     * @return string
+     */
+    protected function getPaymentMethodName($method)
+    {
+        $methods = [
+            'BOLETO' => 'Boleto',
+            'CREDIT_CARD' => 'Cartão de Crédito',
+            'PIX' => 'PIX',
+        ];
+
+        return $methods[$method] ?? $method;
     }
 
     /**
