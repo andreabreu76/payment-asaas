@@ -20,12 +20,8 @@ class PaymentControllerTest extends TestCase
         parent::setUp();
 
         // Set the ASAAS_API_URL and ASAAS_API_KEY for testing
-        if (!env('ASAAS_API_URL')) {
-            config(['app.asaas_api_url' => 'https://api.asaas.com/v3']);
-        }
-        if (!env('ASAAS_API_KEY')) {
-            config(['app.asaas_api_key' => 'test_api_key']);
-        }
+        config(['app.asaas_api_url' => 'https://api.asaas.com/v3']);
+        config(['app.asaas_api_key' => env('ASAAS_API_KEY', 'test_api_key')]);
 
         // Disable middleware for testing
         $this->withoutMiddleware();
@@ -81,12 +77,12 @@ class PaymentControllerTest extends TestCase
 
         // Assert the API was called with the correct data
         Http::assertSent(function ($request) {
-            return $request->url() == env('ASAAS_API_URL') . '/customers' &&
+            return $request->url() == config('app.asaas_api_url') . '/customers' &&
                    $request->data()['name'] == 'Test User';
         });
 
         Http::assertSent(function ($request) {
-            return $request->url() == env('ASAAS_API_URL') . '/payments' &&
+            return $request->url() == config('app.asaas_api_url') . '/payments' &&
                    $request->data()['billingType'] == 'BOLETO';
         });
     }
@@ -140,7 +136,7 @@ class PaymentControllerTest extends TestCase
 
         // Assert the API was called with the correct data
         Http::assertSent(function ($request) {
-            return $request->url() == env('ASAAS_API_URL') . '/payments' &&
+            return $request->url() == config('app.asaas_api_url') . '/payments' &&
                    $request->data()['billingType'] == 'CREDIT_CARD';
         });
     }
@@ -185,7 +181,7 @@ class PaymentControllerTest extends TestCase
 
         // Assert the API was called with the correct data
         Http::assertSent(function ($request) {
-            return $request->url() == env('ASAAS_API_URL') . '/payments' &&
+            return $request->url() == config('app.asaas_api_url') . '/payments' &&
                    $request->data()['billingType'] == 'PIX';
         });
     }

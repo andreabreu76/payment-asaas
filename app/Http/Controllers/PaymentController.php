@@ -10,11 +10,12 @@ use App\Http\Resources\PaymentResource;
 class PaymentController extends Controller
 {
     protected $asaasApiKey;
-    protected $asaasApiUrl = 'https://sandbox.asaas.com/api/v3';
+    protected $asaasApiUrl;
 
     public function __construct()
     {
-        $this->asaasApiKey = env('ASAAS_API_KEY');
+        $this->asaasApiKey = config('app.asaas_api_key', env('ASAAS_API_KEY'));
+        $this->asaasApiUrl = config('app.asaas_api_url', env('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3'));
     }
 
     /**
